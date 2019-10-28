@@ -1,0 +1,163 @@
+import os
+import pandas as pd
+import re
+from bs4 import BeautifulSoup
+
+url_pattern = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
+html_path = '../html/'
+tables_path = '../tables/'
+last_index = 4100
+
+raw_codes_pattern = re.compile('([0-9]{9}) - (.+) \\(([0-9]{3,5}[A-Z])\\)( - ([^\\(\\)]+) \\(([^\\(\\)]+)\\))?')
+
+keys = {
+    'Code(s) NAF :': 'legal_units',
+    'Descriptif Sommaire de l\'activité :': 'organization_description',
+    'Effectifs': 'staff',
+    'Mode de consolidation': 'consolidation_method',
+    'Nombre d\'agents': 'staff',
+    'Nombre de salariés': 'staff',
+    'Population :': 'population',
+    'Type :': 'organization_type',
+    'Type de collectivité :': 'collectivity_type'
+}
+
+print('INFO: Started.')
+
+assessments = []
+emissions = []
+legal_units = []
+
+
+def get_value(cell):
+    value = cell.text.strip()
+    if value == 'nc':
+        value = ''
+    if value != '':
+        value = float(value.replace(',', '.'))
+    return value
+
+
+def clean_string(value):
+    result = value.strip()
+    return result
+
+
+def load_emissions_table(table, assessment_index, assessment_type):
+    result = []
+    totals = {1: 0, 2: 0, 3: 0}
+    for row in table.findAll('tr'):
+        cells = row.findAll(['td', 'th'])
+        if len(cells) == 7 and re.match('[0-9]+', cells[0].text.strip()):
+            scope_item_id = int(cells[0].text.strip())
+            emission = {
+                'assessment_id': assessment_index,
+                'type': assessment_type,
+                'scope_item_id': scope_item_id,
+                'co2': get_value(cells[1]),
+                'ch4': get_value(cells[2]),
+                'n2o': get_value(cells[3]),
+                'other': get_value(cells[4]),
+                'total': get_value(cells[5]),
+                'co2_biogenic': get_value(cells[6]),
+            }
+            if emission['total'] != '':
+                total = emission['total']
+                if scope_item_id <= 5:
+                    totals[1] += total
+                elif scope_item_id <= 7:
+                    totals[2] += total
+                else:
+                    totals[3] += total
+            if emission['total'] != '' or emission['co2_biogenic'] != '':
+                result.append(emission)
+    return result, totals
+
+print('INFO: Checking output directory.')
+if not os.path.exists(tables_path):
+    os.makedirs(tables_path)
+
+print('INFO: Processing files.')
+for index in range(1, last_index):
+    filename = html_path + '%d.html' % index
+    if os.path.exists(filename):
+        with open(filename, encoding='utf-8') as file:
+            print('DEBUG: Processing file %s.' % filename)
+            content = BeautifulSoup(file, 'lxml')
+            assessment = {
+                'id': index,
+                'source_url': url_pattern % index,
+                'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
+                'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
+            }
+            reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
+            if reference is not None:
+                assessment['reference_year'] = int(reference.next_sibling.strip().replace('01/01/', ''))
+            identity_card = content.find('div', {'id': 'fiche-identite'})
+            identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
+            for identity_row in identity_table.findAll('tr'):
+                identity_key = identity_row.findAll('td')[0].text.strip()
+                identity_value = identity_row.findAll('td')[1].text
+                assessment[keys[identity_key]] = clean_string(identity_value)
+            if 'legal_units' in assessment:
+                for line in assessment['legal_units'].splitlines():
+                    if len(line.strip()) > 0:
+                        match = raw_codes_pattern.match(line.strip())
+                        if match is not None:
+                            legal_unit = {
+                                'assessment_id': index,
+                                'siren_code': match.groups()[0],
+                                'activity_label': match.groups()[1],
+                                'activity_code': match.groups()[2],
+                            }
+                            if len(match.groups()) == 6:
+                                legal_unit['region'] = match.groups()[4]
+                                legal_unit['city'] = match.groups()[5]
+                            legal_units.append(legal_unit)
+                        else:
+                            print('ERROR: Invalid legal unit string format "%s".' % line)
+                del assessment['legal_units']
+            if 'staff' in assessment and assessment['staff'] != '':
+                assessment['staff'] = int(assessment['staff'])
+            if 'population' in assessment and assessment['population'] != '':
+                assessment['population'] = int(assessment['population'])
+            current_table = content.find('table', {'id': 'tableauAnneeDeclaration'})
+            if current_table is not None:
+                current_emissions, current_totals = load_emissions_table(current_table, index, 'Déclaration')
+                emissions += current_emissions
+                assessment['total_scope_1'] = current_totals[1]
+                assessment['total_scope_2'] = current_totals[2]
+                assessment['total_scope_3'] = current_totals[3]
+            reference_table = content.find('table', {'id': 'tableauAnneeReference'})
+            if reference_table is not None:
+                reference_emissions, reference_totals = load_emissions_table(reference_table, index, 'Référence')
+                emissions += reference_emissions
+            assessments.append(assessment)
+
+print('INFO: Converting and saving to CSV/XLSX tables.')
+
+emissions = pd.DataFrame(emissions)
+emissions = emissions[['assessment_id', 'type', 'scope_item_id', 'co2', 'ch4', 'n2o', 'other', 'total', 'co2_biogenic']]
+emissions.to_csv(tables_path + 'emissions.csv', index=False, encoding='UTF-8')
+
+assessments = pd.DataFrame(assessments)
+assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
+                           'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
+                           'total_scope_1', 'total_scope_2', 'total_scope_3', 'reference_year', 'source_url']]
+assessments.to_csv(tables_path + 'assessments.csv', index=False, encoding='UTF-8')
+
+legal_units = pd.DataFrame(legal_units)
+legal_units = legal_units[['assessment_id', 'siren_code', 'activity_code', 'activity_label', 'region', 'city']]
+legal_units = legal_units.drop_duplicates()
+legal_units.to_csv(tables_path + 'legal_units.csv', index=False, encoding='UTF-8')
+
+scope_items = pd.read_csv('scope_items.csv', index_col=False, encoding='UTF-8')
+scope_items.to_csv(tables_path + 'scope_items.csv', index=False, encoding='UTF-8')
+
+with pd.ExcelWriter(tables_path + 'BEGES.xlsx') as writer:
+    scope_items.to_excel(writer, sheet_name='scope_items', index=False)
+    assessments.to_excel(writer, sheet_name='assessments', index=False)
+    legal_units.to_excel(writer, sheet_name='legal_units', index=False)
+    emissions.to_excel(writer, sheet_name='emissions', index=False)
+
+print('INFO: Finished.')
