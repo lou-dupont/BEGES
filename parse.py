@@ -21,12 +21,28 @@ keys = {
     'Type :': 'organization_type',
     'Type de collectivité :': 'collectivity_type'
 }
+text_ids = {
+    'bloc-pa-scope1': 'Plan d\'action Scope 1',
+    'bloc-pa-scope2': 'Plan d\'action Scope 2',
+    'bloc-pa-scope3': 'Plan d\'action Scope 3',
+    'presentation-entreprise': 'Présentation de l\'organisation',
+    'politique-developpement-durable': 'Politique de développement durable',
+    'bloc-m-scope1': 'Méthodologie Scope 1',
+    'bloc-m-scope2': 'Méthodologie Scope 2',
+    'bloc-m-scope3': 'Méthodologie Scope 3',
+    'bloc-m-incertitude': 'Méthodologie Incertitudes',
+    'bloc-m-exclusion': 'Méthodologie Exclusions',
+    'bloc-m-source': 'Méthodologie Sources',
+    'bloc-m-recalcul': 'Méthodologie Recalcul',
+    'bloc-m-siret': 'Méthodologie SIRET',
+}
 
 print('INFO: Started.')
 
 assessments = []
 emissions = []
 legal_units = []
+texts = []
 
 
 def get_value(cell):
@@ -41,6 +57,21 @@ def get_value(cell):
 def clean_string(value):
     result = value.strip()
     return result
+
+
+def find_text(html_content, div_id):
+    div = html_content.find('div', {'id': div_id})
+    if div is None:
+        return ''
+    else:
+        if div_id == 'politique-developpement-durable' or div_id == 'presentation-entreprise':
+            div = div.find('div').find('div')
+        for p in div.findAll('p'):
+            if p.text.strip() == '':
+                p.extract()
+        result = '\n'.join([str(child) for child in div.contents]).strip()
+        result = re.sub(r'\n+', "\n", result)
+        return result
 
 
 def load_emissions_table(table, assessment_index, assessment_type):
@@ -73,6 +104,19 @@ def load_emissions_table(table, assessment_index, assessment_type):
                 result.append(emission)
     return result, totals
 
+
+def extract_codes(codes_text):
+    codes_text = 'START' + codes_text + 'END'
+    codes_text = re.sub(' +', '', codes_text)
+    codes_text = re.sub('-+', '', codes_text)
+    siret_codes = re.findall(r"[0-9]{14}", codes_text)
+    for siret_code in siret_codes:
+        codes_text = codes_text.replace(siret_code, '')
+    siren_codes = re.findall(r"[0-9]{9}", codes_text)
+    all_codes = siren_codes + [siret_code[:9] for siret_code in siret_codes]
+    return list(set(all_codes))
+
+
 print('INFO: Checking output directory.')
 if not os.path.exists(tables_path):
     os.makedirs(tables_path)
@@ -93,6 +137,16 @@ for index in range(1, last_index):
             reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
             if reference is not None:
                 assessment['reference_year'] = int(reference.next_sibling.strip().replace('01/01/', ''))
+            # Texts
+            for text_div_id in sorted(text_ids):
+                text = find_text(content, text_div_id)
+                if text != '':
+                    texts.append({'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
+                    if text_div_id == 'bloc-m-siret':
+                        codes = extract_codes(text)
+                        for code in codes:
+                            legal_units.append({'assessment_id': index, 'siren_code': code})
+            # Others
             identity_card = content.find('div', {'id': 'fiche-identite'})
             identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
             for identity_row in identity_table.findAll('tr'):
@@ -151,6 +205,9 @@ legal_units = legal_units[['assessment_id', 'siren_code', 'activity_code', 'acti
 legal_units = legal_units.drop_duplicates()
 legal_units.to_csv(tables_path + 'legal_units.csv', index=False, encoding='UTF-8')
 
+texts = pd.DataFrame(texts)
+texts.to_csv(tables_path + 'texts.csv', index=False, encoding='UTF-8')
+
 scope_items = pd.read_csv('scope_items.csv', index_col=False, encoding='UTF-8')
 scope_items.to_csv(tables_path + 'scope_items.csv', index=False, encoding='UTF-8')
 
@@ -159,5 +216,6 @@ with pd.ExcelWriter(tables_path + 'BEGES.xlsx') as writer:
     assessments.to_excel(writer, sheet_name='assessments', index=False)
     legal_units.to_excel(writer, sheet_name='legal_units', index=False)
     emissions.to_excel(writer, sheet_name='emissions', index=False)
+    texts.to_excel(writer, sheet_name='texts', index=False)
 
 print('INFO: Finished.')
