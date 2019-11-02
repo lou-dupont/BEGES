@@ -138,14 +138,18 @@ for index in range(1, last_index):
             if reference is not None:
                 assessment['reference_year'] = int(reference.next_sibling.strip().replace('01/01/', ''))
             # Texts
+            has_action_plan = False
             for text_div_id in sorted(text_ids):
                 text = find_text(content, text_div_id)
                 if text != '':
                     texts.append({'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
+                    if 'bloc-pa-scope' in text_div_id:
+                        has_action_plan = True
                     if text_div_id == 'bloc-m-siret':
                         codes = extract_codes(text)
                         for code in codes:
                             legal_units.append({'assessment_id': index, 'siren_code': code})
+            assessment['action_plan'] = 'Oui' if has_action_plan else 'Non'
             # Others
             identity_card = content.find('div', {'id': 'fiche-identite'})
             identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
@@ -197,7 +201,8 @@ emissions.to_csv(tables_path + 'emissions.csv', index=False, encoding='UTF-8')
 assessments = pd.DataFrame(assessments)
 assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
                            'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
-                           'total_scope_1', 'total_scope_2', 'total_scope_3', 'reference_year', 'source_url']]
+                           'total_scope_1', 'total_scope_2', 'total_scope_3', 'reference_year', 'action_plan',
+                           'source_url']]
 assessments.to_csv(tables_path + 'assessments.csv', index=False, encoding='UTF-8')
 
 legal_units = pd.DataFrame(legal_units)
@@ -216,6 +221,5 @@ with pd.ExcelWriter(tables_path + 'BEGES.xlsx') as writer:
     assessments.to_excel(writer, sheet_name='assessments', index=False)
     legal_units.to_excel(writer, sheet_name='legal_units', index=False)
     emissions.to_excel(writer, sheet_name='emissions', index=False)
-    texts.to_excel(writer, sheet_name='texts', index=False)
 
 print('INFO: Finished.')

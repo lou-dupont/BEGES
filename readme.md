@@ -23,7 +23,7 @@ Le présent jeu de données est issu d'une reconsolidation artisanale *a posteri
 
 Pour faciliter leur ré-utilisation, les fichiers sont fournis sous deux formats : 
 * un fichier Excel (**BEGES.xlsx**) consolidé avec quatre onglets, pour une exploration manuelle,
-* cinq fichiers CSV (séparateur virgule, encodage UTF-8), pour des traitements automatisés.
+* quatre fichiers CSV (séparateur virgule, encodage UTF-8), pour des traitements automatisés.
 
 ### Postes d'émission
 
@@ -49,6 +49,7 @@ Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) d�
 * `total_scope_2` : émissions totales (en tonnes équivalent CO2), relatives au *Scope 2* (à l'exclusion du CO2 d'origine biogénique), dont le calcul est obligatoire,
 * `total_scope_3` : émissions totales (en tonnes équivalent CO2), relatives au *Scope 3* (à l'exclusion du CO2 d'origine biogénique), dont le calcul est facultatif,
 * `reference_year` : année du bilan de référence,
+* `action_plan` : *Oui* ou *Non* selon qu'un plan d'action a été saisi en accompagnement du bilan ou pas,
 * `source_url` : URL à laquelle est publié le bilan officiel sur le site de l'autorité.
 
 ### Unités légales
@@ -75,10 +76,3 @@ Le fichier **emissions.csv** (ou l'onglet **emissions** du fichier Excel) décri
 * `co2_biogenic` : émissions de dioxyde de carbone d'origine biogénique (en tonnes), qui ne sont pas incluses dans le total (voir la page dédiée à la [prise en compte du CO2 d'origine biogénique](http://www.bilans-ges.ademe.fr/documentation/UPLOAD_DOC_FR/index.htm?co2_biogenique.htm) de l'ADEME).
 
 Toutes les quantités sont exprimées en tonnes équivalent CO2. Les conversions sont réalisées grâce aux [PRG à 100 ans](http://www.bilans-ges.ademe.fr/fr/accueil/contenu/index/page/giec/siGras/0).
-
-### Textes
-
-Le fichier **texts.csv** (ou l'onglet **texts** du fichier Excel) reprend les contenus en texte libre saisis dans chaque bilan. Il comporte les colonnes suivantes :
-* `assessment_id` : identifiant du bilan concerné,
-* `key` : type de texte (selon les libellés des sections du site officiel),
-* `value` : texte libre, qui peut contenir de la mise en forme selon la syntaxe HTML.
