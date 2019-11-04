@@ -107,7 +107,7 @@ def load_emissions_table(table, assessment_index, assessment_type):
 
 def extract_codes(codes_text):
     codes_text = 'START' + codes_text + 'END'
-    codes_text = re.sub(' +', '', codes_text)
+    codes_text = re.sub('\s+', '', codes_text)
     codes_text = re.sub('-+', '', codes_text)
     siret_codes = re.findall(r"[0-9]{14}", codes_text)
     for siret_code in siret_codes:
