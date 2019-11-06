@@ -1,4 +1,16 @@
-# Bilans d'émissions de GES publiés sur le site de l'ADEME (BEGES)
+# Consolidation des bilans GES
+
+Le code source de ce dépôt sert à consolider les bilans d'émissions de gaz à effet de serre (GES) publiés sur le site de l'ADEME. Lire la description du contexte ci-dessous pour en savoir plus. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
+
+## Mode d'emploi pour un usage personnel
+
+Le script consolide un peu plus de données que celles publiées sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/), notamment les textes libres (HTML) saisis par les organisations pour détailler leur présentation, leurs méthodologie ou leur plans d'actions. Ces textes sont alors regroupés dans un fichier **texts.csv**.
+
+Pour lancer la consolidation :
+* ajuster la valeur `last_index` en début du script **download.py** et **parse.py **(nous n'avons malheureusement pas encore de méthode fiable pour déterminer le numéro du dernier bilan publié sur le site de l'ADEME), 
+* lancer le script **download.py** puis le script **parse.py**.
+
+## Description du contexte
 
 Le **Code de l'environnement** dispose ([article L229-25](https://www.legifrance.gouv.fr/affichCodeArticle.do;jsessionid=B27788AA2F0B41AC79977E793273C7FF.tplgfr42s_1?idArticle=LEGIARTI000031694974&cidTexte=LEGITEXT000006074220&dateTexte=20191027)) que certaines organisations doivent établir régulièrement un bilan de leurs émissions de gaz à effet de serre (GES). Les organisations concernées sont :
 
