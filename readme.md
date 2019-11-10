@@ -2,13 +2,14 @@
 
 Le code source de ce dépôt sert à consolider les bilans d'émissions de gaz à effet de serre (GES) publiés sur le site de l'ADEME. Lire la description du contexte ci-dessous pour en savoir plus. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
 
-## Mode d'emploi pour un usage personnel
+## Mode d'emploi
 
-Le script consolide un peu plus de données que celles publiées sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/), notamment les textes libres (HTML) saisis par les organisations pour détailler leur présentation, leurs méthodologie ou leur plans d'actions. Ces textes sont alors regroupés dans un fichier **texts.csv**.
+Le traitement est séparé en deux scripts à exécuter dans l'ordre suivant :
 
-Pour lancer la consolidation :
-* ajuster la valeur `last_index` en début du script **download.py** et **parse.py **(nous n'avons malheureusement pas encore de méthode fiable pour déterminer le numéro du dernier bilan publié sur le site de l'ADEME), 
-* lancer le script **download.py** puis le script **parse.py**.
+1. `download.py` télécharge l'ensemble des pages HTML concernant les bilans GES saisis sur la plateforme,
+2. `parse.py` interprête les fichiers HTML pour en extraire les données.
+
+Les fichiers HTML sont stockés par le premier script et lus par le deuxième script dans un dossier à choisir (par défaut `../html/`). Les fichiers de sorties sont générés dans un dossier à choisir (par défaut `../output/`).
 
 ## Description du contexte
 
@@ -35,7 +36,7 @@ Le présent jeu de données est issu d'une reconsolidation artisanale *a posteri
 
 Pour faciliter leur ré-utilisation, les fichiers sont fournis sous deux formats : 
 * un fichier Excel (**BEGES.xlsx**) consolidé avec quatre onglets, pour une exploration manuelle,
-* quatre fichiers CSV (séparateur virgule, encodage UTF-8), pour des traitements automatisés.
+* cinq fichiers CSV (séparateur virgule, encodage UTF-8), pour des traitements automatisés.
 
 ### Postes d'émission
 
@@ -62,17 +63,18 @@ Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) d�
 * `total_scope_3` : émissions totales (en tonnes équivalent CO2), relatives au *Scope 3* (à l'exclusion du CO2 d'origine biogénique), dont le calcul est facultatif,
 * `reference_year` : année du bilan de référence,
 * `action_plan` : *Oui* ou *Non* selon qu'un plan d'action a été saisi en accompagnement du bilan ou pas,
+* `reductions_scope_1_2` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour la somme indifférenciée du *Scope 1* et du *Scope 2*,
+* `reductions_scope_1` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 1*,
+* `reductions_scope_2` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 2*,
+* `reductions_scope_3` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 3*,
 * `source_url` : URL à laquelle est publié le bilan officiel sur le site de l'autorité.
 
 ### Unités légales
 
-Le fichier **legal_units.csv** (ou l'onglet **legal_units** du fichier Excel) décrit les unités légales (les personnes morales) concernées par chaque bilan. Chaque bilan peut être lié à zéro (c'est fréquemment le cas pour l'État ou les collectivités territoriales), une ou plusieurs unités légales. Il comporte les colonnes suivantes :
+Le fichier **legal_units.csv** (ou l'onglet **legal_units** du fichier Excel) décrit les unités légales (les personnes morales ou leurs établissements) concernées par chaque bilan. Chaque bilan peut être lié à zéro (c'est fréquemment le cas pour l'État ou les collectivités territoriales), une ou plusieurs unités légales. Il comporte les colonnes suivantes :
 * `assessment_id` : identifiant du bilan par lequel l'unité légale est concernée,
-* `siren_code` : code SIREN de l'unité légale,
-* `activity_code` : code (NAF ou APE) de l'activité principale de l'unité légale,
-* `activity_label` : libellé de l'activité principale de l'unité légale,
-* `region` : région de l'unité légale (pas toujours présente),
-* `city`: commune de l'unité légale (pas toujours présente),
+* `legal_unit_id_type` : type d'identifiant pour l'unité légale (*SIREN* pour une organisation ou **SIRET** pour un établissement),
+* `legal_unit_id` : valeur de l'identifiant (9 ou 14 chiffres), à recouper avec la [base SIRENE de l'INSEE](https://www.data.gouv.fr/fr/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/).
 
 ### Émissions détaillées
 
@@ -88,3 +90,10 @@ Le fichier **emissions.csv** (ou l'onglet **emissions** du fichier Excel) décri
 * `co2_biogenic` : émissions de dioxyde de carbone d'origine biogénique (en tonnes), qui ne sont pas incluses dans le total (voir la page dédiée à la [prise en compte du CO2 d'origine biogénique](http://www.bilans-ges.ademe.fr/documentation/UPLOAD_DOC_FR/index.htm?co2_biogenique.htm) de l'ADEME).
 
 Toutes les quantités sont exprimées en tonnes équivalent CO2. Les conversions sont réalisées grâce aux [PRG à 100 ans](http://www.bilans-ges.ademe.fr/fr/accueil/contenu/index/page/giec/siGras/0).
+
+### Textes
+
+Le fichier **texts.csv** (ou l'onglet **texts** du fichier Excel) reprend les contenus en texte libre saisis dans chaque bilan. Il comporte les colonnes suivantes :
+* `assessment_id` : identifiant du bilan concerné,
+* `key` : type de texte (selon les libellés des sections du site officiel),
+* `value` : texte libre, qui peut contenir de la mise en forme selon la syntaxe HTML.

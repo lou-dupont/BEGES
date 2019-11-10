@@ -9,7 +9,7 @@ html_path = '../html/'
 
 # Output consolidated files will be generated in the following directory
 
-output_path = '../tables/'
+output_path = '../output/'
 
 # Main parsing logic
 
@@ -41,6 +41,12 @@ text_ids = {
     'bloc-m-source': 'Méthodologie Sources',
     'bloc-m-recalcul': 'Méthodologie Recalcul',
     'bloc-m-siret': 'Méthodologie SIRET',
+}
+reductions = {
+    'reductions_scope_1_2': re.compile('.*attendu pour les scopes 1 et 2 est de ([0-9]+\\.[0-9]+) tCO2e.*'),
+    'reductions_scope_1': re.compile('.*attendu pour le scope 1 est de ([0-9]+\\.[0-9]+) tCO2e.*'),
+    'reductions_scope_2': re.compile('.*attendu pour le scope 2 est de ([0-9]+\\.[0-9]+) tCO2e.*'),
+    'reductions_scope_3': re.compile('.*attendu pour le scope 3 est de ([0-9]+\\.[0-9]+) tCO2e.*'),
 }
 
 print('INFO: Started.')
@@ -112,15 +118,14 @@ def load_emissions_table(table, assessment_index, assessment_type):
 
 
 def extract_codes(codes_text):
-    codes_text = 'START' + codes_text + 'END'
     codes_text = re.sub('\s+', '', codes_text)
     codes_text = re.sub('-+', '', codes_text)
     siret_codes = re.findall(r"[0-9]{14}", codes_text)
     for siret_code in siret_codes:
         codes_text = codes_text.replace(siret_code, '')
     siren_codes = re.findall(r"[0-9]{9}", codes_text)
-    all_codes = siren_codes + [siret_code[:9] for siret_code in siret_codes]
-    return list(set(all_codes))
+    siren_codes = siren_codes + [siret_code[:9] for siret_code in siret_codes]
+    return siren_codes, siret_codes
 
 
 print('INFO: Checking output directory.')
@@ -154,10 +159,28 @@ for index in indexes:
                 if 'bloc-pa-scope' in text_div_id:
                     has_action_plan = True
                 if text_div_id == 'bloc-m-siret':
-                    codes = extract_codes(text)
-                    for code in codes:
-                        legal_units.append({'assessment_id': index, 'siren_code': code})
+                    siren_codes, siret_codes = extract_codes(text)
+                    for siren_code in siren_codes:
+                        legal_units.append({
+                            'assessment_id': index,
+                            'legal_unit_id_type': 'SIREN',
+                            'legal_unit_id': siren_code,
+                        })
+                    for siret_code in siret_codes:
+                        legal_units.append({
+                            'assessment_id': index,
+                            'legal_unit_id_type': 'SIRET',
+                            'legal_unit_id': siret_code,
+                        })
         assessment['action_plan'] = 'Oui' if has_action_plan else 'Non'
+        # Reductions
+        reductions_p = content.find_all('p', {'class': 'pBold'})
+        reductions_text = ''.join([p.text for p in reductions_p])
+        reductions_text = reductions_text.replace("\n", '')
+        for reduction_key, reduction_pattern in reductions.items():
+            reduction_match = reduction_pattern.match(reductions_text)
+            if reduction_match is not None:
+                assessment[reduction_key] = float(reduction_match.groups()[0])
         # Others
         identity_card = content.find('div', {'id': 'fiche-identite'})
         identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
@@ -172,13 +195,9 @@ for index in indexes:
                     if match is not None:
                         legal_unit = {
                             'assessment_id': index,
-                            'siren_code': match.groups()[0],
-                            'activity_label': match.groups()[1],
-                            'activity_code': match.groups()[2],
+                            'legal_unit_id_type': 'SIREN',
+                            'legal_unit_id': match.groups()[0],
                         }
-                        if len(match.groups()) == 6:
-                            legal_unit['region'] = match.groups()[4]
-                            legal_unit['city'] = match.groups()[5]
                         legal_units.append(legal_unit)
                     else:
                         print('ERROR: Invalid legal unit string format "%s".' % line)
@@ -209,12 +228,14 @@ emissions.to_csv(output_path + 'emissions.csv', index=False, encoding='UTF-8')
 assessments = pd.DataFrame(assessments)
 assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
                            'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
-                           'total_scope_1', 'total_scope_2', 'total_scope_3', 'reference_year', 'action_plan',
+                           'total_scope_1', 'total_scope_2', 'total_scope_3',
+                           'reference_year', 'action_plan',
+                           'reductions_scope_1_2', 'reductions_scope_1', 'reductions_scope_2', 'reductions_scope_3',
                            'source_url']]
 assessments.to_csv(output_path + 'assessments.csv', index=False, encoding='UTF-8')
 
 legal_units = pd.DataFrame(legal_units)
-legal_units = legal_units[['assessment_id', 'siren_code', 'activity_code', 'activity_label', 'region', 'city']]
+legal_units = legal_units[['assessment_id', 'legal_unit_id_type', 'legal_unit_id']]
 legal_units = legal_units.drop_duplicates()
 legal_units.to_csv(output_path + 'legal_units.csv', index=False, encoding='UTF-8')
 
@@ -229,5 +250,6 @@ with pd.ExcelWriter(output_path + 'BEGES.xlsx') as writer:
     assessments.to_excel(writer, sheet_name='assessments', index=False)
     legal_units.to_excel(writer, sheet_name='legal_units', index=False)
     emissions.to_excel(writer, sheet_name='emissions', index=False)
+    texts.to_excel(writer, sheet_name='texts', index=False)
 
 print('INFO: Finished.')
