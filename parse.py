@@ -1,13 +1,19 @@
+import bs4
 import os
 import pandas as pd
 import re
-from bs4 import BeautifulSoup
+
+# HTML files will be parsed from the following directory
+
+html_path = '../html/'
+
+# Output consolidated files will be generated in the following directory
+
+output_path = '../tables/'
+
+# Main parsing logic
 
 url_pattern = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
-html_path = '../html/'
-tables_path = '../tables/'
-last_index = 4100
-
 raw_codes_pattern = re.compile('([0-9]{9}) - (.+) \\(([0-9]{3,5}[A-Z])\\)( - ([^\\(\\)]+) \\(([^\\(\\)]+)\\))?')
 
 keys = {
@@ -118,105 +124,107 @@ def extract_codes(codes_text):
 
 
 print('INFO: Checking output directory.')
-if not os.path.exists(tables_path):
-    os.makedirs(tables_path)
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 
 print('INFO: Processing files.')
-for index in range(1, last_index):
+filename_pattern = re.compile(r'([0-9]+).html')
+filenames = [x for x in os.listdir(html_path) if filename_pattern.match(x) is not None]
+indexes = sorted([int(filename_pattern.match(x).groups()[0]) for x in filenames])
+for index in indexes:
     filename = html_path + '%d.html' % index
-    if os.path.exists(filename):
-        with open(filename, encoding='utf-8') as file:
-            print('DEBUG: Processing file %s.' % filename)
-            content = BeautifulSoup(file, 'lxml')
-            assessment = {
-                'id': index,
-                'source_url': url_pattern % index,
-                'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
-                'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
-            }
-            reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
-            if reference is not None:
-                assessment['reference_year'] = int(reference.next_sibling.strip().replace('01/01/', ''))
-            # Texts
-            has_action_plan = False
-            for text_div_id in sorted(text_ids):
-                text = find_text(content, text_div_id)
-                if text != '':
-                    texts.append({'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
-                    if 'bloc-pa-scope' in text_div_id:
-                        has_action_plan = True
-                    if text_div_id == 'bloc-m-siret':
-                        codes = extract_codes(text)
-                        for code in codes:
-                            legal_units.append({'assessment_id': index, 'siren_code': code})
-            assessment['action_plan'] = 'Oui' if has_action_plan else 'Non'
-            # Others
-            identity_card = content.find('div', {'id': 'fiche-identite'})
-            identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
-            for identity_row in identity_table.findAll('tr'):
-                identity_key = identity_row.findAll('td')[0].text.strip()
-                identity_value = identity_row.findAll('td')[1].text
-                assessment[keys[identity_key]] = clean_string(identity_value)
-            if 'legal_units' in assessment:
-                for line in assessment['legal_units'].splitlines():
-                    if len(line.strip()) > 0:
-                        match = raw_codes_pattern.match(line.strip())
-                        if match is not None:
-                            legal_unit = {
-                                'assessment_id': index,
-                                'siren_code': match.groups()[0],
-                                'activity_label': match.groups()[1],
-                                'activity_code': match.groups()[2],
-                            }
-                            if len(match.groups()) == 6:
-                                legal_unit['region'] = match.groups()[4]
-                                legal_unit['city'] = match.groups()[5]
-                            legal_units.append(legal_unit)
-                        else:
-                            print('ERROR: Invalid legal unit string format "%s".' % line)
-                del assessment['legal_units']
-            if 'staff' in assessment and assessment['staff'] != '':
-                assessment['staff'] = int(assessment['staff'])
-            if 'population' in assessment and assessment['population'] != '':
-                assessment['population'] = int(assessment['population'])
-            current_table = content.find('table', {'id': 'tableauAnneeDeclaration'})
-            if current_table is not None:
-                current_emissions, current_totals = load_emissions_table(current_table, index, 'Déclaration')
-                emissions += current_emissions
-                assessment['total_scope_1'] = current_totals[1]
-                assessment['total_scope_2'] = current_totals[2]
-                assessment['total_scope_3'] = current_totals[3]
-            reference_table = content.find('table', {'id': 'tableauAnneeReference'})
-            if reference_table is not None:
-                reference_emissions, reference_totals = load_emissions_table(reference_table, index, 'Référence')
-                emissions += reference_emissions
-            assessments.append(assessment)
+    with open(filename, encoding='utf-8') as file:
+        print('DEBUG: Processing file %s.' % filename)
+        content = bs4.BeautifulSoup(file, 'lxml')
+        assessment = {
+            'id': index,
+            'source_url': url_pattern % index,
+            'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
+            'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
+        }
+        reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
+        if reference is not None:
+            assessment['reference_year'] = int(reference.next_sibling.strip().replace('01/01/', ''))
+        # Texts
+        has_action_plan = False
+        for text_div_id in sorted(text_ids):
+            text = find_text(content, text_div_id)
+            if text != '':
+                texts.append({'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
+                if 'bloc-pa-scope' in text_div_id:
+                    has_action_plan = True
+                if text_div_id == 'bloc-m-siret':
+                    codes = extract_codes(text)
+                    for code in codes:
+                        legal_units.append({'assessment_id': index, 'siren_code': code})
+        assessment['action_plan'] = 'Oui' if has_action_plan else 'Non'
+        # Others
+        identity_card = content.find('div', {'id': 'fiche-identite'})
+        identity_table = identity_card.find('td', text=re.compile('Type :')).findParent('table')
+        for identity_row in identity_table.findAll('tr'):
+            identity_key = identity_row.findAll('td')[0].text.strip()
+            identity_value = identity_row.findAll('td')[1].text
+            assessment[keys[identity_key]] = clean_string(identity_value)
+        if 'legal_units' in assessment:
+            for line in assessment['legal_units'].splitlines():
+                if len(line.strip()) > 0:
+                    match = raw_codes_pattern.match(line.strip())
+                    if match is not None:
+                        legal_unit = {
+                            'assessment_id': index,
+                            'siren_code': match.groups()[0],
+                            'activity_label': match.groups()[1],
+                            'activity_code': match.groups()[2],
+                        }
+                        if len(match.groups()) == 6:
+                            legal_unit['region'] = match.groups()[4]
+                            legal_unit['city'] = match.groups()[5]
+                        legal_units.append(legal_unit)
+                    else:
+                        print('ERROR: Invalid legal unit string format "%s".' % line)
+            del assessment['legal_units']
+        if 'staff' in assessment and assessment['staff'] != '':
+            assessment['staff'] = int(assessment['staff'])
+        if 'population' in assessment and assessment['population'] != '':
+            assessment['population'] = int(assessment['population'])
+        current_table = content.find('table', {'id': 'tableauAnneeDeclaration'})
+        if current_table is not None:
+            current_emissions, current_totals = load_emissions_table(current_table, index, 'Déclaration')
+            emissions += current_emissions
+            assessment['total_scope_1'] = current_totals[1]
+            assessment['total_scope_2'] = current_totals[2]
+            assessment['total_scope_3'] = current_totals[3]
+        reference_table = content.find('table', {'id': 'tableauAnneeReference'})
+        if reference_table is not None:
+            reference_emissions, reference_totals = load_emissions_table(reference_table, index, 'Référence')
+            emissions += reference_emissions
+        assessments.append(assessment)
 
 print('INFO: Converting and saving to CSV/XLSX tables.')
 
 emissions = pd.DataFrame(emissions)
 emissions = emissions[['assessment_id', 'type', 'scope_item_id', 'co2', 'ch4', 'n2o', 'other', 'total', 'co2_biogenic']]
-emissions.to_csv(tables_path + 'emissions.csv', index=False, encoding='UTF-8')
+emissions.to_csv(output_path + 'emissions.csv', index=False, encoding='UTF-8')
 
 assessments = pd.DataFrame(assessments)
 assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
                            'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
                            'total_scope_1', 'total_scope_2', 'total_scope_3', 'reference_year', 'action_plan',
                            'source_url']]
-assessments.to_csv(tables_path + 'assessments.csv', index=False, encoding='UTF-8')
+assessments.to_csv(output_path + 'assessments.csv', index=False, encoding='UTF-8')
 
 legal_units = pd.DataFrame(legal_units)
 legal_units = legal_units[['assessment_id', 'siren_code', 'activity_code', 'activity_label', 'region', 'city']]
 legal_units = legal_units.drop_duplicates()
-legal_units.to_csv(tables_path + 'legal_units.csv', index=False, encoding='UTF-8')
+legal_units.to_csv(output_path + 'legal_units.csv', index=False, encoding='UTF-8')
 
 texts = pd.DataFrame(texts)
-texts.to_csv(tables_path + 'texts.csv', index=False, encoding='UTF-8')
+texts.to_csv(output_path + 'texts.csv', index=False, encoding='UTF-8')
 
 scope_items = pd.read_csv('scope_items.csv', index_col=False, encoding='UTF-8')
-scope_items.to_csv(tables_path + 'scope_items.csv', index=False, encoding='UTF-8')
+scope_items.to_csv(output_path + 'scope_items.csv', index=False, encoding='UTF-8')
 
-with pd.ExcelWriter(tables_path + 'BEGES.xlsx') as writer:
+with pd.ExcelWriter(output_path + 'BEGES.xlsx') as writer:
     scope_items.to_excel(writer, sheet_name='scope_items', index=False)
     assessments.to_excel(writer, sheet_name='assessments', index=False)
     legal_units.to_excel(writer, sheet_name='legal_units', index=False)
