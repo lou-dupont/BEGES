@@ -132,6 +132,13 @@ print('INFO: Checking output directory.')
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 
+
+print('INFO: Loading published indexes.')
+published_indexes = []
+with open(html_path + 'indexes.txt', 'r') as file:
+    for line in file:
+        published_indexes.append(int(re.sub('[^0-9]', '', line)))
+
 print('INFO: Processing files.')
 filename_pattern = re.compile(r'([0-9]+).html')
 filenames = [x for x in os.listdir(html_path) if filename_pattern.match(x) is not None]
@@ -146,6 +153,7 @@ for index in indexes:
             'source_url': url_pattern % index,
             'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
             'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
+            'is_draft': not index in published_indexes,
         }
         reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
         if reference is not None:
@@ -231,7 +239,7 @@ assessments = assessments[['id', 'organization_name', 'organization_description'
                            'total_scope_1', 'total_scope_2', 'total_scope_3',
                            'reference_year', 'action_plan',
                            'reductions_scope_1_2', 'reductions_scope_1', 'reductions_scope_2', 'reductions_scope_3',
-                           'source_url']]
+                           'is_draft', 'source_url']]
 assessments.to_csv(output_path + 'assessments.csv', index=False, encoding='UTF-8')
 
 legal_units = pd.DataFrame(legal_units)

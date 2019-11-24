@@ -67,6 +67,7 @@ Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) d�
 * `reductions_scope_1` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 1*,
 * `reductions_scope_2` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 2*,
 * `reductions_scope_3` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 3*,
+* `is_draft` : indique si le bilan est encore en "mode brouillon" sur le site de l'ADEME, ou si l'organisation a effectivement cliqué sur "Publier" pour le rendre accessible via le moteur de recherche,
 * `source_url` : URL à laquelle est publié le bilan officiel sur le site de l'autorité.
 
 ### Unités légales
