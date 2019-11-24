@@ -153,7 +153,7 @@ for index in indexes:
             'source_url': url_pattern % index,
             'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
             'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
-            'is_draft': not index in published_indexes,
+            'is_draft': 'Non' if index in published_indexes else 'Oui',
         }
         reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
         if reference is not None:
