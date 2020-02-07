@@ -10,6 +10,8 @@ html_path = '../html/'
 # Output consolidated files will be generated in the following directory
 
 output_path = '../output/'
+output_path_full = output_path + 'full/'
+output_path_published = output_path + 'published/'
 
 # Main parsing logic
 
@@ -50,11 +52,6 @@ reductions = {
 }
 
 print('INFO: Started.')
-
-assessments = []
-emissions = []
-legal_units = []
-texts = []
 
 
 def get_value(cell):
@@ -128,10 +125,77 @@ def extract_codes(codes_text):
     return siren_codes, siret_codes
 
 
-print('INFO: Checking output directory.')
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
+class Dataset:
 
+    def __init__(self):
+    
+        self.collections = {
+            'assessments': [],
+            'emissions': [],
+            'legal_units': [],
+            'texts': [],
+        }
+
+    def save(self, path):
+        
+        emissions = pd.DataFrame(self.collections['emissions'])
+        emissions = emissions[['assessment_id', 'type', 'scope_item_id', 'co2', 'ch4', 'n2o', 'other', 'total', 'co2_biogenic']]
+        emissions.to_csv(path + 'emissions.csv', index=False, encoding='UTF-8')
+
+        assessments = pd.DataFrame(self.collections['assessments'])
+        assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
+                                   'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
+                                   'total_scope_1', 'total_scope_2', 'total_scope_3',
+                                   'reference_year', 'action_plan',
+                                   'reductions_scope_1_2', 'reductions_scope_1', 'reductions_scope_2', 'reductions_scope_3',
+                                   'is_draft', 'source_url']]
+        assessments.to_csv(path + 'assessments.csv', index=False, encoding='UTF-8')
+
+        legal_units = pd.DataFrame(self.collections['legal_units'])
+        legal_units = legal_units[['assessment_id', 'legal_unit_id_type', 'legal_unit_id']]
+        legal_units = legal_units.drop_duplicates()
+        legal_units.to_csv(path + 'legal_units.csv', index=False, encoding='UTF-8')
+
+        texts = pd.DataFrame(self.collections['texts'])
+        texts.to_csv(path + 'texts.csv', index=False, encoding='UTF-8')
+
+        scope_items = pd.read_csv('scope_items.csv', index_col=False, encoding='UTF-8')
+        scope_items.to_csv(path + 'scope_items.csv', index=False, encoding='UTF-8')
+
+        with pd.ExcelWriter(path + 'bilans-ges.xlsx') as writer:
+            scope_items.to_excel(writer, sheet_name='scope_items', index=False)
+            assessments.to_excel(writer, sheet_name='assessments', index=False)
+            legal_units.to_excel(writer, sheet_name='legal_units', index=False)
+            emissions.to_excel(writer, sheet_name='emissions', index=False)
+            texts.to_excel(writer, sheet_name='texts', index=False)
+
+
+class Database:
+
+    def __init__(self):
+        self.full = Dataset()
+        self.published = Dataset()
+
+    def append(self, collection, is_published, item):
+        self.full.collections[collection].append(item)
+        if is_published:
+            self.published.collections[collection].append(item)
+
+    def add_all(self, collection, is_published, items):
+        self.full.collections[collection] += items
+        if is_published:
+            self.published.collections[collection] += items
+
+    def save(self):
+        self.full.save(output_path_full)
+        self.published.save(output_path_published)
+
+
+print('INFO: Checking output directory.')
+if not os.path.exists(output_path_full):
+    os.makedirs(output_path_full)
+if not os.path.exists(output_path_published):
+    os.makedirs(output_path_published)
 
 print('INFO: Loading published indexes.')
 published_indexes = []
@@ -140,6 +204,7 @@ with open(html_path + 'indexes.txt', 'r') as file:
         published_indexes.append(int(re.sub('[^0-9]', '', line)))
 
 print('INFO: Processing files.')
+db = Database()
 filename_pattern = re.compile(r'([0-9]+).html')
 filenames = [x for x in os.listdir(html_path) if filename_pattern.match(x) is not None]
 indexes = sorted([int(filename_pattern.match(x).groups()[0]) for x in filenames])
@@ -148,12 +213,13 @@ for index in indexes:
     with open(filename, encoding='utf-8') as file:
         print('DEBUG: Processing file %s.' % filename)
         content = bs4.BeautifulSoup(file, 'lxml')
+        is_published = index in published_indexes
         assessment = {
             'id': index,
             'source_url': url_pattern % index,
             'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
             'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
-            'is_draft': 'Non' if index in published_indexes else 'Oui',
+            'is_draft': 'Non' if is_published else 'Oui',
         }
         reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
         if reference is not None:
@@ -163,19 +229,19 @@ for index in indexes:
         for text_div_id in sorted(text_ids):
             text = find_text(content, text_div_id)
             if text != '':
-                texts.append({'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
+                db.append('texts', is_published, {'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
                 if 'bloc-pa-scope' in text_div_id:
                     has_action_plan = True
                 if text_div_id == 'bloc-m-siret':
                     siren_codes, siret_codes = extract_codes(text)
                     for siren_code in siren_codes:
-                        legal_units.append({
+                        db.append('legal_units', is_published, {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIREN',
                             'legal_unit_id': siren_code,
                         })
                     for siret_code in siret_codes:
-                        legal_units.append({
+                        db.append('legal_units', is_published, {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIRET',
                             'legal_unit_id': siret_code,
@@ -201,12 +267,11 @@ for index in indexes:
                 if len(line.strip()) > 0:
                     match = raw_codes_pattern.match(line.strip())
                     if match is not None:
-                        legal_unit = {
+                        db.append('legal_units', is_published, {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIREN',
                             'legal_unit_id': match.groups()[0],
-                        }
-                        legal_units.append(legal_unit)
+                        })
                     else:
                         print('ERROR: Invalid legal unit string format "%s".' % line)
             del assessment['legal_units']
@@ -217,47 +282,18 @@ for index in indexes:
         current_table = content.find('table', {'id': 'tableauAnneeDeclaration'})
         if current_table is not None:
             current_emissions, current_totals = load_emissions_table(current_table, index, 'Déclaration')
-            emissions += current_emissions
+            db.add_all('emissions', is_published, current_emissions)
             assessment['total_scope_1'] = current_totals[1]
             assessment['total_scope_2'] = current_totals[2]
             assessment['total_scope_3'] = current_totals[3]
         reference_table = content.find('table', {'id': 'tableauAnneeReference'})
         if reference_table is not None:
             reference_emissions, reference_totals = load_emissions_table(reference_table, index, 'Référence')
-            emissions += reference_emissions
-        assessments.append(assessment)
+            db.add_all('emissions', is_published, reference_emissions)
+        db.append('assessments', is_published, assessment)
 
 print('INFO: Converting and saving to CSV/XLSX tables.')
 
-emissions = pd.DataFrame(emissions)
-emissions = emissions[['assessment_id', 'type', 'scope_item_id', 'co2', 'ch4', 'n2o', 'other', 'total', 'co2_biogenic']]
-emissions.to_csv(output_path + 'emissions.csv', index=False, encoding='UTF-8')
-
-assessments = pd.DataFrame(assessments)
-assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
-                           'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
-                           'total_scope_1', 'total_scope_2', 'total_scope_3',
-                           'reference_year', 'action_plan',
-                           'reductions_scope_1_2', 'reductions_scope_1', 'reductions_scope_2', 'reductions_scope_3',
-                           'is_draft', 'source_url']]
-assessments.to_csv(output_path + 'assessments.csv', index=False, encoding='UTF-8')
-
-legal_units = pd.DataFrame(legal_units)
-legal_units = legal_units[['assessment_id', 'legal_unit_id_type', 'legal_unit_id']]
-legal_units = legal_units.drop_duplicates()
-legal_units.to_csv(output_path + 'legal_units.csv', index=False, encoding='UTF-8')
-
-texts = pd.DataFrame(texts)
-texts.to_csv(output_path + 'texts.csv', index=False, encoding='UTF-8')
-
-scope_items = pd.read_csv('scope_items.csv', index_col=False, encoding='UTF-8')
-scope_items.to_csv(output_path + 'scope_items.csv', index=False, encoding='UTF-8')
-
-with pd.ExcelWriter(output_path + 'BEGES.xlsx') as writer:
-    scope_items.to_excel(writer, sheet_name='scope_items', index=False)
-    assessments.to_excel(writer, sheet_name='assessments', index=False)
-    legal_units.to_excel(writer, sheet_name='legal_units', index=False)
-    emissions.to_excel(writer, sheet_name='emissions', index=False)
-    texts.to_excel(writer, sheet_name='texts', index=False)
+db.save()
 
 print('INFO: Finished.')
