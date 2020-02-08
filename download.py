@@ -29,6 +29,8 @@ def build_payload(type_id, page):
 
 url = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/xhr-page'
 published_indexes = []
+
+# To download the set of published indexes
 for type_id in [1, 2, 3, 4]:
     response = requests.post(url, data=build_payload(type_id, 1))
     content = bs4.BeautifulSoup(response.content, 'lxml')
@@ -48,6 +50,11 @@ published_indexes = sorted(list(set(published_indexes)))
 with open(html_path + 'indexes.txt', 'w') as file:
     for index in published_indexes:
         file.write(str(index) + '\n')
+
+# To load the set of published indexes from a file
+# with open(html_path + 'indexes.txt', 'r') as file:
+    # for line in file:
+        # published_indexes.append(int(line.replace('\n', '')))
 
 print('INFO: Iterating over expected pages.')
 
