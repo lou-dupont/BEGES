@@ -1,6 +1,6 @@
-# Consolidation des bilans GES
+# Consolidation des bilans GES de l'ADEME
 
-Le code source de ce dépôt sert à consolider les bilans d'émissions de gaz à effet de serre (GES) publiés sur le site de l'ADEME. Lire la description du contexte ci-dessous pour en savoir plus. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
+Ce code sert à consolider les bilans d'émissions de gaz à effet de serre publiés sur le site de l'ADEME par les enterprises ou organisations françaises. Voir la description ci-dessous pour en savoir plus. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
 
 ## Mode d'emploi
 
@@ -28,17 +28,23 @@ Les standards internationaux divisent les bilans d'émissions de GES en trois ca
 
 L'obligation de bilan de GES ne couvre que les deux premiers sous-ensembles. La réalisation et la publication d'un inventaire pour le troisième est seulement recommandée.
 
-L'ADEME diffuse sur son site ces bilans, via un [moteur de recherche](http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0) mais ne publie pas la base de donnée sous-jacente consolidée de l'ensemble des bilans des organisations concernées (pour le moment).
+### Accès à la base officielle
 
-Le présent jeu de données est issu d'une reconsolidation artisanale *a posteriori*.
+L'article L312-1-1 du Code des Relations entre le Public et l'Administration (CRPA) dispose que les administrations ont l'obligation de publier en ligne "*les données, mises à jour de façon régulière, dont la publication présente un intérêt économique, social, sanitaire ou environnemental*". L'article L300-4 du CRPA ajoute que les données doivent être publiées "*dans un standard ouvert, aisément réutilisable et exploitable par un système de traitement automatisé*".
 
-## Format des fichiers
+L'ADEME diffuse sur son site les bilans GES saisis par les organisations via un [moteur de recherche](http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0), mais ne publie pas la base de donnée sous-jacente consolidée de l'ensemble des bilans (pour le moment). Il est donc possible de visualiser chaque bilan un par un, mais pas d'effectuer des traitements automatisés sur ces données. 
 
-Pour faciliter leur ré-utilisation, les fichiers sont fournis sous deux formats : 
-* un fichier Excel (**BEGES.xlsx**) consolidé avec quatre onglets, pour une exploration manuelle,
-* cinq fichiers CSV (séparateur virgule, encodage UTF-8), pour des traitements automatisés.
+### Documentation
 
-### Postes d'émission
+La meilleure documentation disponible est celle rédigée et diffusée par l'ADEME, par exemple à partir de la page [Principes des bilans GES](https://www.data.gouv.fr/fr/datasets/base-carbone-complete-de-lademe/) du site officiel. La lecture de cette excellente documentation est indispensable pour bien comprendre le sens des données publiées ci-dessous.
+
+### Description du jeu proposé
+
+Un travail de consolidation artisanale de la base complète est proposé ici. Pour faciliter leur ré-utilisation, les données sont fournies sous deux formats : 
+* un fichier **XLSX**, pour une ouverture facile dans Excel, à destination du grand public,
+* une archive compressée de cinq fichiers **CSV** (séparateur **virgule**, encodage **UTF-8**), pour un usage automatisé dans un format standard, à destination des informaticien-ne-s.
+
+#### Postes d'émission
 
 Le fichier **scope_items.csv** (ou l'onglet **scope_items** du fichier Excel) décrit les postes d'émission composant chaque *scope*. Il comporte les colonnes suivantes :
 * `id` : identifiant numérique du poste,
@@ -46,7 +52,7 @@ Le fichier **scope_items.csv** (ou l'onglet **scope_items** du fichier Excel) d�
 * `scope_id` : identifiant du *scope* auquel est rattaché le poste,
 * `scope_label`: libellé du *scope*.
 
-### Bilans réalisés
+#### Bilans réalisés
 
 Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) décrit les bilans réalisés. Il comporte les colonnes suivantes :
 * `id` : identifiant numérique du bilan,
@@ -67,17 +73,17 @@ Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) d�
 * `reductions_scope_1` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 1*,
 * `reductions_scope_2` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 2*,
 * `reductions_scope_3` : réduction des émissions (en tonnes équivalent CO2) envisagées d'ici le prochain bilan, pour le *Scope 3*,
-* `is_draft` : indique si le bilan est encore en "mode brouillon" sur le site de l'ADEME, ou si l'organisation a effectivement cliqué sur "Publier" pour le rendre accessible via le moteur de recherche,
+* `is_draft` : indique si le bilan est encore en "mode brouillon" sur le site de l'ADEME, ou si l'organisation a effectivement cliqué sur "Publier" pour le rendre accessible via le moteur de recherche (seuls ces bilans sont publiés ici, bien que les autres soient accessibles en ligne),
 * `source_url` : URL à laquelle est publié le bilan officiel sur le site de l'autorité.
 
-### Unités légales
+#### Unités légales
 
 Le fichier **legal_units.csv** (ou l'onglet **legal_units** du fichier Excel) décrit les unités légales (les personnes morales ou leurs établissements) concernées par chaque bilan. Chaque bilan peut être lié à zéro (c'est fréquemment le cas pour l'État ou les collectivités territoriales), une ou plusieurs unités légales. Il comporte les colonnes suivantes :
 * `assessment_id` : identifiant du bilan par lequel l'unité légale est concernée,
 * `legal_unit_id_type` : type d'identifiant pour l'unité légale (*SIREN* pour une organisation ou **SIRET** pour un établissement),
 * `legal_unit_id` : valeur de l'identifiant (9 ou 14 chiffres), à recouper avec la [base SIRENE de l'INSEE](https://www.data.gouv.fr/fr/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/).
 
-### Émissions détaillées
+#### Émissions détaillées
 
 Le fichier **emissions.csv** (ou l'onglet **emissions** du fichier Excel) décrit les émissions par poste de chaque bilan. Il comporte les colonnes suivantes : 
 * `assessment_id` : identifiant du bilan,
@@ -92,7 +98,7 @@ Le fichier **emissions.csv** (ou l'onglet **emissions** du fichier Excel) décri
 
 Toutes les quantités sont exprimées en tonnes équivalent CO2. Les conversions sont réalisées grâce aux [PRG à 100 ans](http://www.bilans-ges.ademe.fr/fr/accueil/contenu/index/page/giec/siGras/0).
 
-### Textes
+#### Textes
 
 Le fichier **texts.csv** (ou l'onglet **texts** du fichier Excel) reprend les contenus en texte libre saisis dans chaque bilan. Il comporte les colonnes suivantes :
 * `assessment_id` : identifiant du bilan concerné,
