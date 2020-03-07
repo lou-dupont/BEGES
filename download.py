@@ -35,6 +35,7 @@ content = bs4.BeautifulSoup(response.content, 'lxml')
 count_text = content.find('h4', {'class': 'bilans'}).text
 count = int(re.sub('[^0-9]', '', count_text))
 print('DEBUG: Received %d results.' % (count))
+count = 1
 for page in range(count // 10 + 1):
     print('DEBUG: Querying page %d.' % (page + 1))
     response = requests.post(url, data=build_payload(page + 1))
@@ -51,7 +52,7 @@ with open(html_path + 'indexes.txt', 'w') as file:
 
 print('INFO: Iterating over expected pages.')
 
-url_pattern = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
+url_pattern = 'https://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
 last_valid_index = 0
 index = 1
 
