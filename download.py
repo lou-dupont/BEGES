@@ -26,19 +26,19 @@ print('INFO: Downloading search result lists.')
 def build_payload(page):
     return { 'page': page }
 
-url = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/xhr-page'
+url = 'https://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/xhr-page'
 published_indexes = []
 
 # To download the set of published indexes
-response = requests.post(url, data=build_payload(1))
+session = requests.Session()
+response = session.post(url, data=build_payload(1))
 content = bs4.BeautifulSoup(response.content, 'lxml')
 count_text = content.find('h4', {'class': 'bilans'}).text
 count = int(re.sub('[^0-9]', '', count_text))
 print('DEBUG: Received %d results.' % (count))
-count = 1
 for page in range(count // 10 + 1):
     print('DEBUG: Querying page %d.' % (page + 1))
-    response = requests.post(url, data=build_payload(page + 1))
+    response = session.post(url, data=build_payload(page + 1))
     content = bs4.BeautifulSoup(response.content, 'lxml')
     links = content.find_all('a', {'class': 'button voir'})
     for link in links:
