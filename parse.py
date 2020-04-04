@@ -1,17 +1,21 @@
 import bs4
+import datetime
 import os
 import pandas as pd
 import re
 
 # HTML files will be parsed from the following directory
 
-html_path = '../html/'
+html_path = './html/'
 
 # Output consolidated files will be generated in the following directory
 
-output_path = '../output/'
-output_path_full = output_path + 'full/'
-output_path_published = output_path + 'published/'
+today = datetime.date.today()
+today = today.strftime('%Y-%m-%d')
+
+output_path = './output/'
+output_path_full = output_path + today + '/full/'
+output_path_published = output_path + today + '/published/'
 
 # Main parsing logic
 

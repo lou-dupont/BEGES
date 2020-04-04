@@ -5,7 +5,7 @@ import requests
 
 # HTML files will be downloaded in the following directory
 
-html_path = '../html/'
+html_path = './html/'
 
 # This script tries to download all reports by scanning all possible integer identifiers (starting from 1).
 # Unfortunately, we don't have a reliable method to determine the last index, so we decide that we stop trying new

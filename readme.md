@@ -1,15 +1,29 @@
 # Consolidation des bilans GES de l'ADEME
 
-Ce code sert à consolider les bilans d'émissions de gaz à effet de serre publiés sur le site de l'ADEME par les enterprises ou organisations françaises. Voir la description ci-dessous pour en savoir plus. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
+Ce code sert à consolider les bilans d'émissions de gaz à effet de serre publiés sur le site de l'ADEME par les enterprises ou organisations françaises. Voir la description ci-dessous pour en savoir plus sur le contexte et le contenu. Les données consolidées sont ensuite rendues disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/bilans-demissions-de-ges-publies-sur-le-site-de-lademe-1/).
 
-## Mode d'emploi
+## Paramétrage du téléversement vers la plateforme
 
-Le traitement est séparé en deux scripts à exécuter dans l'ordre suivant :
+Pour sauvegarder vers [data.gouv.fr](data.gouv.fr), il faut une clef API (qui est secrète). Le mode d'emploi est :
+* créer un fichier `params.py` au même niveau que le code `main.py`,
+* dans ce fichier, saisir la clef au format `X_API_KEY = "ma_clef_api"`.
+
+## Mode d'emploi manuel
+
+Le traitement est séparé en trois scripts à dérouler dans l'ordre suivant :
 
 1. `download.py` télécharge l'ensemble des pages HTML concernant les bilans GES saisis sur la plateforme,
-2. `parse.py` interprête les fichiers HTML pour en extraire les données.
+2. `parse.py` interprête les fichiers HTML pour en extraire les données et les consolider aux formats CSV et Excel,
+3. `upload.py` automatise la sauvegarde vers la plateforme de données ouvertes (optionnel, nécessite la clef API).
 
-Les fichiers HTML sont stockés par le premier script et lus par le deuxième script dans un dossier à choisir (par défaut `../html/`). Les fichiers de sorties sont générés dans un dossier à choisir (par défaut `../output/`).
+Les fichiers HTML sont stockés par le premier script et lus par le deuxième script dans un dossier à choisir (par défaut `./html/`). Les fichiers de sorties sont générés dans un dossier à choisir (par défaut `./output/`).
+
+## Mode d'emploi automatisé
+
+Le script `main.py` exécute ces trois étapes dans l'ordre. Pour une exécution toutes les semaines, le samedi à 20h, ajouter la ligne suivante au fichier `/etc/crontab` 
+```
+0 20 * * 6   root    python3 /srv/BEGES/main.py >/dev/null 2>&1
+```
 
 ## Description du contexte
 
