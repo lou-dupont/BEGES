@@ -76,7 +76,7 @@ def find_text(html_content, div_id):
         return ''
     else:
         if div_id == 'politique-developpement-durable' or div_id == 'presentation-entreprise':
-            div = div.find('div').find('div')
+            div = div.find('div')
         for p in div.findAll('p'):
             if p.text.strip() == '':
                 p.extract()
