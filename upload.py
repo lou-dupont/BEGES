@@ -10,7 +10,7 @@ resource_CSV_ZIP = 'c90e1000-d51a-4e7a-9276-f613ea8afea9'
 
 today = datetime.date.today()
 today = today.strftime('%Y-%m-%d')
-path = './output/' + today + '/published/'
+path = './output/' + today + '/'
 
 
 def upload_file(local_name, resource_id):

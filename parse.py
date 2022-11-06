@@ -13,13 +13,11 @@ html_path = './html/'
 today = datetime.date.today()
 today = today.strftime('%Y-%m-%d')
 
-output_path = './output/'
-output_path_full = output_path + today + '/full/'
-output_path_published = output_path + today + '/published/'
+output_path = './output/' + today + '/'
 
 # Main parsing logic
 
-url_pattern = 'http://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
+url_pattern = 'http://bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
 raw_codes_pattern = re.compile('([0-9]{9}) - (.+) \\(([0-9]{3,5}[A-Z])\\)( - ([^\\(\\)]+) \\(([^\\(\\)]+)\\))?')
 
 keys = {
@@ -177,35 +175,22 @@ class Dataset:
 class Database:
 
     def __init__(self):
-        self.full = Dataset()
-        self.published = Dataset()
+        self.ds = Dataset()
 
-    def append(self, collection, is_published, item):
-        self.full.collections[collection].append(item)
-        if is_published:
-            self.published.collections[collection].append(item)
+    def append(self, collection, item):
+        self.ds.collections[collection].append(item)
 
-    def add_all(self, collection, is_published, items):
-        self.full.collections[collection] += items
-        if is_published:
-            self.published.collections[collection] += items
+    def add_all(self, collection, items):
+        self.ds.collections[collection] += items
 
     def save(self):
-        self.full.save(output_path_full)
-        self.published.save(output_path_published)
+        self.ds.save(output_path)
 
 
 print('INFO: Checking output directory.')
-if not os.path.exists(output_path_full):
-    os.makedirs(output_path_full)
-if not os.path.exists(output_path_published):
-    os.makedirs(output_path_published)
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 
-print('INFO: Loading published indexes.')
-published_indexes = []
-with open(html_path + 'indexes.txt', 'r') as file:
-    for line in file:
-        published_indexes.append(int(re.sub('[^0-9]', '', line)))
 
 print('INFO: Processing files.')
 db = Database()
@@ -217,13 +202,12 @@ for index in indexes:
     with open(filename, encoding='utf-8') as file:
         print('DEBUG: Processing file %s.' % filename)
         content = bs4.BeautifulSoup(file, 'lxml')
-        is_published = index in published_indexes
         assessment = {
             'id': index,
             'source_url': url_pattern % index,
             'organization_name': clean_string(content.find('div', {'id': 'nomEntreprise'}).text),
             'reporting_year': int(content.find('div', {'class': 'anneefiche'}).text.strip()),
-            'is_draft': 'Non' if is_published else 'Oui',
+            'is_draft': 'Non',
         }
         reference = content.find('label', {'for': 'BGS_IS_ANNEE_REFERENCE_CALCULE'})
         if reference is not None:
@@ -233,19 +217,19 @@ for index in indexes:
         for text_div_id in sorted(text_ids):
             text = find_text(content, text_div_id)
             if text != '':
-                db.append('texts', is_published, {'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
+                db.append('texts', {'assessment_id': index, 'key': text_ids[text_div_id], 'value': text})
                 if 'bloc-pa-scope' in text_div_id:
                     has_action_plan = True
                 if text_div_id == 'bloc-m-siret':
                     siren_codes, siret_codes = extract_codes(text)
                     for siren_code in siren_codes:
-                        db.append('legal_units', is_published, {
+                        db.append('legal_units', {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIREN',
                             'legal_unit_id': siren_code,
                         })
                     for siret_code in siret_codes:
-                        db.append('legal_units', is_published, {
+                        db.append('legal_units', {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIRET',
                             'legal_unit_id': siret_code,
@@ -271,7 +255,7 @@ for index in indexes:
                 if len(line.strip()) > 0:
                     match = raw_codes_pattern.match(line.strip())
                     if match is not None:
-                        db.append('legal_units', is_published, {
+                        db.append('legal_units', {
                             'assessment_id': index,
                             'legal_unit_id_type': 'SIREN',
                             'legal_unit_id': match.groups()[0],
@@ -286,15 +270,15 @@ for index in indexes:
         current_table = content.find('table', {'id': 'tableauAnneeDeclaration'})
         if current_table is not None:
             current_emissions, current_totals = load_emissions_table(current_table, index, 'Déclaration')
-            db.add_all('emissions', is_published, current_emissions)
+            db.add_all('emissions', current_emissions)
             assessment['total_scope_1'] = current_totals[1]
             assessment['total_scope_2'] = current_totals[2]
             assessment['total_scope_3'] = current_totals[3]
         reference_table = content.find('table', {'id': 'tableauAnneeReference'})
         if reference_table is not None:
             reference_emissions, reference_totals = load_emissions_table(reference_table, index, 'Référence')
-            db.add_all('emissions', is_published, reference_emissions)
-        db.append('assessments', is_published, assessment)
+            db.add_all('emissions', reference_emissions)
+        db.append('assessments', assessment)
 
 print('INFO: Converting and saving to CSV/XLSX tables.')
 
