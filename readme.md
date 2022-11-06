@@ -4,7 +4,7 @@ Ce code sert à consolider les bilans d'émissions de gaz à effet de serre publ
 
 ## Paramétrage du téléversement vers la plateforme
 
-Pour sauvegarder vers [data.gouv.fr](data.gouv.fr), il faut une clef API (qui est secrète). Le mode d'emploi est :
+Pour sauvegarder vers [data.gouv.fr](https://www.data.gouv.fr/), il faut une clef API (qui est secrète). Le mode d'emploi est :
 * créer un fichier `params.py` au même niveau que le code `main.py`,
 * dans ce fichier, saisir la clef au format `X_API_KEY = "ma_clef_api"`.
 
@@ -27,8 +27,7 @@ Le script `main.py` exécute ces trois étapes dans l'ordre. Pour une exécution
 
 ## Description du contexte
 
-Le **Code de l'environnement** dispose ([article L229-25](https://www.legifrance.gouv.fr/affichCodeArticle.do;jsessionid=B27788AA2F0B41AC79977E793273C7FF.tplgfr42s_1?idArticle=LEGIARTI000031694974&cidTexte=LEGITEXT000006074220&dateTexte=20191027)) que certaines organisations doivent établir régulièrement un bilan de leurs émissions de gaz à effet de serre (GES). Les organisations concernées sont :
-
+L'[article L229-25](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000031694974) du Code de l'environnement que certaines organisations doivent établir régulièrement un bilan de leurs émissions de gaz à effet de serre (GES). Les organisations concernées sont :
 * les personnes morales de droit privé employant plus de 500 personnes (250 dans les régions et départements d'outre-mer)
 * l’État, les régions, les départements, les métropoles, les communautés urbaines, les communautés d'agglomération et les communes ou communautés de communes de plus de 50 000 habitants ainsi que les autres personnes morales de droit public employant plus de 250 personnes.
 
@@ -44,9 +43,14 @@ L'obligation de bilan de GES ne couvre que les deux premiers sous-ensembles. La 
 
 ### Accès à la base officielle
 
-L'article L312-1-1 du Code des Relations entre le Public et l'Administration (CRPA) dispose que les administrations ont l'obligation de publier en ligne "*les données, mises à jour de façon régulière, dont la publication présente un intérêt économique, social, sanitaire ou environnemental*". L'article L300-4 du CRPA ajoute que les données doivent être publiées "*dans un standard ouvert, aisément réutilisable et exploitable par un système de traitement automatisé*".
+L'[article L312-1-1](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033205512/) du Code des Relations entre le Public et l'Administration (CRPA) dispose que les administrations ont l'obligation de publier en ligne "*les données, mises à jour de façon régulière, dont la publication présente un intérêt économique, social, sanitaire ou environnemental*". L'[article L300-4](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033205519) du CRPA ajoute que les données doivent être publiées "*dans un standard ouvert, aisément réutilisable et exploitable par un système de traitement automatisé*".
 
-L'ADEME diffuse sur son site les bilans GES saisis par les organisations via un [moteur de recherche](http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0), mais ne publie pas la base de donnée sous-jacente consolidée de l'ensemble des bilans (pour le moment). Il est donc possible de visualiser chaque bilan un par un, mais pas d'effectuer des traitements automatisés sur ces données. 
+L'ADEME diffuse sur son site les bilans GES saisis par les organisations via un [moteur de recherche](http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0).
+Il est donc possible de visualiser chaque bilan un par un, mais pas d'effectuer des traitements automatisés sur ces données car ce site ne permet pas de télécharger un export de la base de données sous-jacente.
+
+Notre projet a démarré en 2019. A l'été 2021, suite à une [requête de l'association Ouvre-boîte](https://forum.ouvre-boite.org/t/bilans-ges-ademe-et-mtes/397), l'ADEME a publié un [export de la base au 31/12/2020](https://www.data.gouv.fr/fr/datasets/bilans-ges/) en promettant une mise à jour annuelle. Le 06/11/2022, cet export n'a toujours pas été mis à jour.
+
+Notre projet permet donc de télécharger un export complet des données à tout moment, sans attendre une mise à jour annuelle éventuelle de l'export officielle de l'ADEME. 
 
 ### Documentation
 
