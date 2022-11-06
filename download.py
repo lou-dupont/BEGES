@@ -20,41 +20,11 @@ print('INFO: Checking output directory.')
 if not os.path.exists(html_path):
     os.makedirs(html_path)
 
-print('INFO: Downloading search result lists.')
-
-
-def build_payload(page):
-    return { 'page': page }
-
-url = 'https://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/xhr-page'
-published_indexes = []
-
-# To download the set of published indexes
-session = requests.Session()
-response = session.post(url, data=build_payload(1))
-content = bs4.BeautifulSoup(response.content, 'lxml')
-count_text = content.find('h4', {'class': 'bilans'}).text
-count = int(re.sub('[^0-9]', '', count_text))
-print('DEBUG: Received %d results.' % (count))
-for page in range(count // 10 + 1):
-    print('DEBUG: Querying page %d.' % (page + 1))
-    response = session.post(url, data=build_payload(page + 1))
-    content = bs4.BeautifulSoup(response.content, 'lxml')
-    links = content.find_all('a', {'class': 'button voir'})
-    for link in links:
-        report_id = re.sub('[^0-9]', '', link.get('href'))
-        published_indexes.append(int(report_id))
-
-published_indexes = sorted(list(set(published_indexes)))
-with open(html_path + 'indexes.txt', 'w') as file:
-    for index in published_indexes:
-        file.write(str(index) + '\n')
-
 print('INFO: Iterating over expected pages.')
 
-url_pattern = 'https://www.bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
-last_valid_index = 0
+url_pattern = 'https://bilans-ges.ademe.fr/fr/bilanenligne/detail/index/idElement/%d/back/bilans'
 index = 1
+last_valid_index = index
 
 while index - last_valid_index <= GIVE_UP_THRESHOLD:
     url = url_pattern % index
