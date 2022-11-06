@@ -31,7 +31,7 @@ L'[article L229-25](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI0000
 * les personnes morales de droit privé employant plus de 500 personnes (250 dans les régions et départements d'outre-mer)
 * l’État, les régions, les départements, les métropoles, les communautés urbaines, les communautés d'agglomération et les communes ou communautés de communes de plus de 50 000 habitants ainsi que les autres personnes morales de droit public employant plus de 250 personnes.
 
-Ce bilan doit être réalisé tous les 4 ans pour les personnes morales privées et tous les 3 ans pour les personnes morales publiques. Il doit être transmis par voie électronique sur la plateforme [Bilans GES](http://www.bilans-ges.ademe.fr/) de l'[ADEME](https://www.ademe.fr/) et est public.
+Ce bilan doit être réalisé tous les 4 ans pour les personnes morales privées et tous les 3 ans pour les personnes morales publiques. Il doit être transmis par voie électronique sur la plateforme [Bilans GES](http://bilans-ges.ademe.fr/) de l'[ADEME](https://www.ademe.fr/) et est public.
 
 Les standards internationaux divisent les bilans d'émissions de GES en trois catégories, appelées "*scopes*" :
 
@@ -45,7 +45,7 @@ L'obligation de bilan de GES ne couvre que les deux premiers sous-ensembles. La 
 
 L'[article L312-1-1](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033205512/) du Code des Relations entre le Public et l'Administration (CRPA) dispose que les administrations ont l'obligation de publier en ligne "*les données, mises à jour de façon régulière, dont la publication présente un intérêt économique, social, sanitaire ou environnemental*". L'[article L300-4](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033205519) du CRPA ajoute que les données doivent être publiées "*dans un standard ouvert, aisément réutilisable et exploitable par un système de traitement automatisé*".
 
-L'ADEME diffuse sur son site les bilans GES saisis par les organisations via un [moteur de recherche](http://www.bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0).
+L'ADEME diffuse sur son site les bilans GES saisis par les organisations via un [moteur de recherche](http://bilans-ges.ademe.fr/fr/bilanenligne/bilans/index/siGras/0).
 Il est donc possible de visualiser chaque bilan un par un, mais pas d'effectuer des traitements automatisés sur ces données car ce site ne permet pas de télécharger un export de la base de données sous-jacente.
 
 Notre projet a démarré en 2019. A l'été 2021, suite à une [requête de l'association Ouvre-boîte](https://forum.ouvre-boite.org/t/bilans-ges-ademe-et-mtes/397), l'ADEME a publié un [export de la base au 31/12/2020](https://www.data.gouv.fr/fr/datasets/bilans-ges/) en promettant une mise à jour annuelle. Le 06/11/2022, cet export n'a toujours pas été mis à jour.
@@ -54,7 +54,7 @@ Notre projet permet donc de télécharger un export complet des données à tout
 
 ### Documentation
 
-La meilleure documentation disponible est celle rédigée et diffusée par l'ADEME, par exemple à partir de la page [Principes des bilans GES](https://www.data.gouv.fr/fr/datasets/base-carbone-complete-de-lademe/) du site officiel. La lecture de cette excellente documentation est indispensable pour bien comprendre le sens des données publiées ci-dessous.
+La meilleure documentation disponible est celle rédigée et diffusée par l'ADEME, par exemple à partir de la page [Principes des bilans GES](https://bilans-ges.ademe.fr/fr/accueil/contenu/index/page/principes/siGras/0) du site officiel. La lecture de cette excellente documentation est indispensable pour bien comprendre le sens des données publiées ci-dessous.
 
 ### Description du jeu proposé
 
@@ -112,9 +112,9 @@ Le fichier **emissions.csv** (ou l'onglet **emissions** du fichier Excel) décri
 * `n2o` : émissions de protoxyde d'azote, N2O (en tonnes équivalent CO2),
 * `other` : émissions d'autres gaz à effet de serre (en tonnes équivalent CO2),
 * `total` : total des émissions de gaz à effet de serre (en tonnes équivalent CO2), qui peut être présent sans que les colonnes précédentes soient remplies (lorsque l'organisation n'a pas détaillé ses émissions par type de gaz),
-* `co2_biogenic` : émissions de dioxyde de carbone d'origine biogénique (en tonnes), qui ne sont pas incluses dans le total (voir la page dédiée à la [prise en compte du CO2 d'origine biogénique](http://www.bilans-ges.ademe.fr/documentation/UPLOAD_DOC_FR/index.htm?co2_biogenique.htm) de l'ADEME).
+* `co2_biogenic` : émissions de dioxyde de carbone d'origine biogénique (en tonnes), qui ne sont pas incluses dans le total (voir la page dédiée à la [prise en compte du CO2 d'origine biogénique](http://bilans-ges.ademe.fr/documentation/UPLOAD_DOC_FR/index.htm?co2_biogenique.htm) de l'ADEME).
 
-Toutes les quantités sont exprimées en tonnes équivalent CO2. Les conversions sont réalisées grâce aux [PRG à 100 ans](http://www.bilans-ges.ademe.fr/fr/accueil/contenu/index/page/giec/siGras/0).
+Toutes les quantités sont exprimées en tonnes équivalent CO2. Les conversions sont réalisées grâce aux [PRG à 100 ans](http://bilans-ges.ademe.fr/fr/accueil/contenu/index/page/giec/siGras/0).
 
 #### Textes
 
