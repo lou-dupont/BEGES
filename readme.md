@@ -78,6 +78,8 @@ Le fichier **assessments.csv** (ou l'onglet **assessments** du fichier Excel) d�
 * `organization_description` : description libre de l'organisation,
 * `organization_type` : type d'organisation,
 * `collectivity_type` : type de collectivité (pour les collectivités territoriales),
+* `naf_name`: nom de l’activité principale exercée selon la nomenclature INSEE
+* `naf_code`: code de l’activité principale exercée selon la nomenclature INSEE
 * `staff` : effectifs, nombre d'agents ou de salariés de l'organisation,
 * `population` : population de la collectivité (pour les collectivités territoriales),
 * `consolidation_method` : mode de consolidation du bilan,
