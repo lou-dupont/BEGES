@@ -145,8 +145,8 @@ class Dataset:
         emissions.to_csv(path + 'emissions.csv', index=False, encoding='UTF-8')
 
         assessments = pd.DataFrame(self.collections['assessments'])
-        assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 
-                                   'collectivity_type', 'staff', 'population', 'consolidation_method', 'reporting_year', 
+        assessments = assessments[['id', 'organization_name', 'organization_description', 'organization_type', 'collectivity_type', 
+                                   'naf_name', 'naf_code', 'staff', 'population', 'consolidation_method', 'reporting_year', 
                                    'total_scope_1', 'total_scope_2', 'total_scope_3',
                                    'reference_year', 'action_plan',
                                    'reductions_scope_1_2', 'reductions_scope_1', 'reductions_scope_2', 'reductions_scope_3',
@@ -260,6 +260,8 @@ for index in indexes:
                             'legal_unit_id_type': 'SIREN',
                             'legal_unit_id': match.groups()[0],
                         })
+                        assessment['naf_name']= match.groups()[1]
+                        assessment['naf_code']= match.groups()[2]
                     else:
                         print('ERROR: Invalid legal unit string format "%s".' % line)
             del assessment['legal_units']
